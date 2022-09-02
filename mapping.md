@@ -6,7 +6,34 @@ I may be missing a beat, e.g. some amazing table. I simply googled API and was d
 For Ensembl, there does not seem to be a list of 
 canonical proteins (ENSP), so a double jump is needed.
 
-First let's get the list of canonical ENST (transcripts):
+## Validation
+
+First let's see how many gnomADs match.
+
+```python
+pickle_folder = '/users/brc/asc142/michelanglo/protein-data/pickle/taxid9606'
+verdicts = {}
+for filename in os.listdir(pickle_folder):
+    verdict = {'concordant': 0, 'disconcordant': 0}
+    path = os.path.join(pickle_folder, filename)
+    name, ext = os.path.splitext(filename)
+    if ext != '.p':
+        continue
+    protein = ProteinAnalyser(uniprot=name, taxid=9606)
+    protein.load()
+    for gnomad in protein.gnomAD:  #: michelanglo_protein.gnomad_variant.Variant
+        if gnomad.consequence != 'missense_variant':
+            # too corner-case-y to assess properly otherwise
+            continue
+        concorandancy: str = 'concordant' if var.residue_index < len(protein) and protein.sequence[var.residue_index - 1] != var.from_residue else 'disconcordant'
+        verdict[concorandancy] += 1
+    verdicts[name]: Dict[str, int] = verdict
+    
+concorandance = pd.DataFrame(verdicts)
+concorandance.sum(axis=1)
+```
+
+Then let's get the list of canonical ENST (transcripts):
 
 ```python
 import pandas as pd
@@ -63,7 +90,15 @@ seqs
 | ENSP00000455079.2 | MRASR...SPPSP | ENST00000567970.2  | C16orf95 | ENST00000567970    | True           |
 | ENSP00000007510.6 | MVARS...TDSLD | ENST00000007510.9  | ARHGAP33 | ENST00000007510    | True           |
 
+## gnomAD canonical
+Following the revelation than may gnomADs did not match,
+the gnomAD 3.1 VCF files were parsed for the canonical entry in order to make a map
 
+> COPY CODE OVER
+
+JSON dump can be found at [gnomAD3_canonical_ENSP.json](gnomAD3_canonical_ENSP.json)
+
+## Uniprot
 For Uniprot, I have a preparsed set of files for Michelanglo w/ gnomAD 3 missenses loaded already.
 But with the new Uniprot format using `requests` to get a JSON is really easy to get the former.
 Anyway, gene symbol to Uniprot:
