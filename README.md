@@ -3,7 +3,7 @@ These are datasets of gnomAD missense/nonsenses ported to Uniprot numbering.
 
 ## TL;DR
 
-**AIM**: I want to copy-paste a snippet and get the data.
+**AIM**: I want to copy-paste a snippet and get the data without downloading/pulling the repository.
 
 ```python
 import requests
@@ -38,12 +38,35 @@ def get_chunk(i) -> dict:
     response.raise_for_status()
     return response.json()
 
+# download the whole thing
 uniprot_gnomads: Dict[str, List[GnomadDict]] = dict( **ChainMap(*map(get_chunk, range(0, 21))) )
 ```
-NB: The dataherein is a subset: it is only for protein coding regions and does not conatin silent mutations.
+NB: The data herein is a subset: it is only for protein coding regions and does not contain silent mutations.
 
 They contain the uniprot numbered variants with details of frequency,
 see the typed dictionary above for more details.
+
+If a specific protein is sough and you cannot be bothered finding its uniprot id,
+then you can do:
+
+```python
+import requests, json
+from typing import Dict, List
+
+
+def retrieve_data(filename: str) -> dict:
+    url = f'https://github.com/matteoferla/Uniprot-ported-gnomADs/raw/main/{filename}'
+    response : requests.Response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+gene_name = '👾👾👾'
+names2uniprot: Dict[str, str] = retrieve_data('uniprot_gnomADs/taxid9606-names2uniprot.json')
+uniprot_id: str = names2uniprot[gene_name]
+index: Dict[str, str] = retrieve_data('index.json')
+filename: str = index[uniprot_id]
+data: GnomadDict = retrieve_data(f'uniprot_gnomADs/{filename}')[uniprot_id]
+```
 
 ## Mapping
 
